@@ -1,6 +1,7 @@
 const express = require('express');
 const { MessagingResponse } = require('twilio').twiml;
 const { processMessage } = require('../services/claude');
+const { transcribeVoiceNote } = require('../services/sarvam');
 
 const router = express.Router();
 
@@ -16,9 +17,15 @@ router.post('/whatsapp', async (req, res) => {
 
   let userText = body;
 
-  if (numMedia > 0) {
-    // Voice note transcription coming in Step 7
-    userText = '(voice note received — transcription coming soon)';
+  if (numMedia > 0 && req.body.MediaContentType0 === 'audio/ogg') {
+    try {
+      console.log('Transcribing voice note...');
+      userText = await transcribeVoiceNote(req.body.MediaUrl0);
+      console.log(`Transcription: ${userText}`);
+    } catch (err) {
+      console.error('Transcription failed:', err);
+      userText = '(voice note received but transcription failed)';
+    }
   }
 
   try {
