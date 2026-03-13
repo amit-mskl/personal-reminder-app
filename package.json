@@ -1,0 +1,26 @@
+{
+  "name": "bhoolanath",
+  "version": "1.0.0",
+  "description": "WhatsApp-based reminder app that calls you when it's time",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [
+    "whatsapp",
+    "reminder",
+    "twilio",
+    "sarvam"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "better-sqlite3": "^12.6.2",
+    "dayjs": "^1.11.20",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "node-cron": "^4.2.1",
+    "twilio": "^5.13.0"
+  }
+}
