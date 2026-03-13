@@ -1,6 +1,7 @@
 const express = require('express');
 const { urlencoded } = require('express');
 const config = require('./config');
+const webhookRouter = require('./routes/webhook');
 
 const app = express();
 
@@ -11,6 +12,9 @@ app.use(urlencoded({ extended: false }));
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+// Twilio WhatsApp webhook
+app.use('/webhook', webhookRouter);
 
 app.listen(config.port, () => {
   console.log(`Bhoolanath listening on port ${config.port}`);
