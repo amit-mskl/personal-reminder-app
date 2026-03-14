@@ -41,7 +41,7 @@ async function transcribeVoiceNote(mediaUrl) {
 }
 
 // Generate speech from text using Sarvam AI TTS (for reminder calls)
-async function generateSpeech(text, speaker = 'shubh') {
+async function generateSpeech(text, speaker = 'abhilash') {
   const response = await fetch('https://api.sarvam.ai/text-to-speech', {
     method: 'POST',
     headers: {
