@@ -206,12 +206,43 @@ async function processMessage(phone, userText) {
   });
 
   let replyText = '';
+  let toolResults = [];
   for (const block of response.content) {
     if (block.type === 'text') {
       replyText += block.text;
     } else if (block.type === 'tool_use') {
       const result = executeAction(block.name, block.input, phone);
       console.log(`Tool: ${block.name} -> ${result}`);
+      toolResults.push({ name: block.name, input: block.input, result });
+    }
+  }
+
+  // If Claude called a tool but didn't include text, generate a confirmation
+  if (!replyText && toolResults.length > 0) {
+    const tool = toolResults[0];
+    const tz = (db.prepare('SELECT timezone FROM users WHERE phone = ?').get(phone) || {}).timezone || 'Asia/Kolkata';
+    switch (tool.name) {
+      case 'create_reminder': {
+        const localTime = dayjs.utc(tool.input.remind_at).tz(tz).format('ddd MMM D, h:mm A');
+        replyText = `Done! I'll remind you: "${tool.input.message}" on ${localTime}.`;
+        break;
+      }
+      case 'reschedule_reminder': {
+        const localTime = dayjs.utc(tool.input.new_remind_at).tz(tz).format('ddd MMM D, h:mm A');
+        replyText = `Rescheduled reminder #${tool.input.reminder_id} to ${localTime}.`;
+        break;
+      }
+      case 'cancel_reminder':
+        replyText = `Reminder #${tool.input.reminder_id} cancelled.`;
+        break;
+      case 'add_follow_up_note':
+        replyText = `Note added to reminder #${tool.input.reminder_id}.`;
+        break;
+      case 'list_reminders':
+        replyText = tool.result;
+        break;
+      default:
+        replyText = 'Done!';
     }
   }
 
