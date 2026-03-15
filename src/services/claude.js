@@ -79,10 +79,21 @@ function buildSystemPrompt(phone) {
     "SELECT id, message, remind_at FROM reminders WHERE phone = ? AND status = 'pending' ORDER BY remind_at"
   ).all(phone);
 
-  let reminderList = 'None';
+  const recentReminders = db.prepare(
+    "SELECT id, message, remind_at, status FROM reminders WHERE phone = ? AND status IN ('completed', 'triggered') ORDER BY updated_at DESC LIMIT 5"
+  ).all(phone);
+
+  let pendingList = 'None';
   if (pendingReminders.length > 0) {
-    reminderList = pendingReminders
+    pendingList = pendingReminders
       .map((r) => `#${r.id} - "${r.message}" - ${dayjs.utc(r.remind_at).tz(tz).format('ddd MMM D, h:mm A')}`)
+      .join('\n');
+  }
+
+  let recentList = 'None';
+  if (recentReminders.length > 0) {
+    recentList = recentReminders
+      .map((r) => `#${r.id} - "${r.message}" - ${dayjs.utc(r.remind_at).tz(tz).format('ddd MMM D, h:mm A')} [${r.status}]`)
       .join('\n');
   }
 
@@ -95,13 +106,16 @@ USER'S TIMEZONE: ${tz}
 USER'S LOCAL TIME: ${now.format('ddd MMM D, YYYY h:mm A')}
 
 PENDING REMINDERS:
-${reminderList}
+${pendingList}
+
+RECENTLY COMPLETED REMINDERS:
+${recentList}
 
 RULES:
 1. When the user wants to set a reminder, extract the reminder text and the date/time. If the date/time is ambiguous or missing, ask for clarification conversationally.
 2. Default times: "morning" = 9:00 AM, "afternoon" = 2:00 PM, "evening" = 6:00 PM, "night" = 9:00 PM in the user's timezone.
-3. Always confirm the reminder details before creating it. Ask "Should I set this?" after showing what you understood.
-4. When rescheduling, identify which reminder by ID or context from the pending list above.
+3. When the user's message has a clear reminder and time, create it immediately and confirm it's done. Do NOT ask "Should I set this?" — just set it. Only ask for clarification if the message is genuinely ambiguous (e.g., missing time or unclear what to remind about).
+4. When rescheduling, identify which reminder by ID or context from the pending or recently completed lists above. Use the reschedule_reminder tool — do NOT create a new reminder.
 5. Keep responses short and friendly — this is WhatsApp, not email.
 6. If the user says something unrelated to reminders, respond briefly and steer back to reminders.
 7. All datetimes you return in tool calls MUST be in ISO 8601 UTC format (e.g., 2026-03-14T09:30:00Z).

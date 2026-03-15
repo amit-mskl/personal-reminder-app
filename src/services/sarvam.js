@@ -20,7 +20,7 @@ async function transcribeVoiceNote(mediaUrl) {
   // Send to Sarvam STT API as multipart form data
   const formData = new FormData();
   formData.append('file', new Blob([audioBuffer], { type: 'audio/ogg' }), 'voice.ogg');
-  formData.append('model', 'saaras:v2');
+  formData.append('model', 'saaras:v3');
   formData.append('language_code', 'unknown');
 
   const response = await fetch('https://api.sarvam.ai/speech-to-text', {
