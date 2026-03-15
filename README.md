@@ -624,6 +624,72 @@ npm start
 
 ---
 
+## Deploying to Render (Production)
+
+Up to this point, Bhoolanath runs on your laptop with ngrok. That means if your laptop sleeps or you close the terminal, the bot stops. Deploying to Render gives you a 24/7 server with a permanent URL.
+
+### Step 1: Create a Render account
+Sign up at [render.com](https://render.com) (free tier available).
+
+### Step 2: Create a Web Service
+1. Click **"New +"** > **"Web Service"**
+2. Connect your GitHub account and select the `personal-reminder-app` repo
+3. Fill in these settings:
+
+| Field | Value |
+|---|---|
+| **Name** | `bhoolanath` or `personal-reminder-app` |
+| **Region** | Closest to India (Singapore if available) |
+| **Branch** | `main` |
+| **Build Command** | `npm install` |
+| **Start Command** | `node src/index.js` |
+| **Instance Type** | Free |
+
+### Step 3: Add environment variables
+In the **Environment** section, add these 6 variables (copy values from your `.env`):
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_PHONE_NUMBER`
+- `TWILIO_WHATSAPP_NUMBER`
+- `ANTHROPIC_API_KEY`
+- `SARVAM_API_KEY`
+
+**Skip `PORT`** — Render sets its own port automatically.
+**Skip `BASE_URL` for now** — we'll add it after the first deploy.
+
+### Step 4: Deploy
+Click **Deploy**. Wait for it to finish. Render will give you a public URL like `https://personal-reminder-app.onrender.com`.
+
+### Step 5: Set BASE_URL
+Go back to **Environment** tab on Render and add:
+- `BASE_URL` = `https://personal-reminder-app.onrender.com`
+
+Render will auto-redeploy with this change.
+
+### Step 6: Update Twilio webhook
+In Twilio Console > **Messaging** > **Try it out** > **Send a WhatsApp message** > **Sandbox Settings**:
+- Change "When a message comes in" from your ngrok URL to:
+  ```
+  https://personal-reminder-app.onrender.com/webhook/whatsapp
+  ```
+- Save
+
+### Step 7: Test
+Send a WhatsApp message to the sandbox number. You can now close ngrok and your local server — Bhoolanath is running 24/7 on Render!
+
+### Viewing logs
+On Render: go to your service dashboard > **Logs** tab. Shows real-time server logs just like your local terminal.
+
+### Important: SQLite on Render free tier
+Render's free tier has **ephemeral storage** — the filesystem resets on every deploy. This means your SQLite database (`bhoolanath.db`) gets wiped each time Render redeploys. For a personal reminder app this is usually fine (old reminders don't matter much), but if you need persistence, consider:
+- **Render Disk** ($0.25/GB/month) — persistent storage that survives redeploys
+- **Switching to a hosted database** like Turso (SQLite-compatible, free tier) or Supabase (PostgreSQL)
+
+### Auto-deploy
+Every time you `git push` to `main`, Render automatically redeploys. No manual steps needed.
+
+---
+
 ## Key Lessons Learned
 
 1. **Always check API error messages** — they often tell you exactly what's wrong (wrong model name, wrong speaker, etc.)
@@ -633,3 +699,6 @@ npm start
 5. **System prompt engineering matters** — small changes to Claude's instructions dramatically change behavior (confirmation flow, reschedule logic)
 6. **Always have a fallback** — if the voice call fails, WhatsApp message ensures the user still gets reminded
 7. **Git commit often** — committing after each working step means you can always roll back
+8. **Deploy early** — moving from localhost to Render was straightforward because we kept the app simple (no build step, plain Node.js)
+9. **Skip `PORT` on PaaS** — platforms like Render set their own port; don't hardcode it
+10. **Separate dev and prod URLs** — ngrok for development, Render for production; update Twilio webhook accordingly
